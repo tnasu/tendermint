@@ -457,6 +457,16 @@ func (txmp *TxMempool) Update(
 	// transactions are left.
 	if txmp.Size() > 0 {
 		if txmp.config.Recheck {
+			if txmp.Size() != txmp.gossipIndex.Len() {
+				txmp.logger.Error(fmt.Sprintf("inconsistent state of txStore and the others: "+
+					"height: %d, txStore.Size: %d, "+
+					"gossipIndex.Len: %d, priorityIndex.Len: %d, "+
+					"heightIndex.Size: %d, timestampIndex.Size: %d",
+					blockHeight, txmp.txStore.Size(),
+					txmp.gossipIndex.Len(), txmp.priorityIndex.Len(),
+					txmp.heightIndex.Size(), txmp.timestampIndex.Size(),
+				))
+			}
 			txmp.logger.Debug(
 				"executing re-CheckTx for all remaining transactions",
 				"num_txs", txmp.Size(),
@@ -550,7 +560,7 @@ func (txmp *TxMempool) initTxCallback(wtx *WrappedTx, res *abci.Response, txInfo
 			// No room for the new incoming transaction so we just remove it from
 			// the cache.
 			txmp.cache.Remove(wtx.tx)
-			txmp.logger.Error(
+			txmp.logger.Debug(
 				"rejected incoming good transaction; mempool full",
 				"tx", fmt.Sprintf("%X", wtx.tx.Hash()),
 				"err", err.Error(),
